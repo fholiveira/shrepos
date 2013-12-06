@@ -1,5 +1,5 @@
 #!/bin/bash
-shrepos="$HOME/.shrepos"
+shrepos="$HOME/.sh.repos"
 test -f $shrepos/shrepos.conf && source $shrepos/shrepos.conf
 
 function update_link() {
@@ -42,7 +42,7 @@ function update_all() {
 
 function update() {
     local repo_name="$1"
-    local repos="$shrepos/reposn"
+    local repos="$shrepos/repos"
 
     test -z "$repo_name" && update_all && exit 0  
 
