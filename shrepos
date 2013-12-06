@@ -1,0 +1,26 @@
+#!/bin/bash
+
+shrepos="$HOME/.shrepos"
+repos="$shrepos/repos"
+
+source $shrepos/shrepos.conf
+
+function update_repo() {
+	name=$(echo $1 | cut -d " " -f1)
+    repo=$(echo $1 | cut -d " " -f2)
+	scripts=$(echo $1 | cut -d " " -f3 | tr "," "\n")
+
+	repo_dir="$shrepos/repos.d/$name"
+	test -d "$repo_dir" && (cd $repo_dir && git pull) || git clone $repo $repo_dir
+	
+	for script in $scripts ; do
+		chmod +x $repo_dir/$script
+		ln -sf $repo_dir/$script $bin_dir/$script
+	done
+}
+
+grep -A 1 -v -e "^#" -e "^$" "$repos" | while read -r repo ; do
+    test -n "$repo" && update_repo "$repo"
+done
+
+
