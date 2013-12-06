@@ -1,26 +1,58 @@
 #!/bin/bash
-
 shrepos="$HOME/.shrepos"
-repos="$shrepos/repos"
+test -f $shrepos/shrepos.conf && source $shrepos/shrepos.conf
 
-source $shrepos/shrepos.conf
+function update_link() {
+    local link_config=$1
+    local repo_dir=$2
 
-function update_repo() {
-	name=$(echo $1 | cut -d " " -f1)
-    repo=$(echo $1 | cut -d " " -f2)
-	scripts=$(echo $1 | cut -d " " -f3 | tr "," "\n")
+    local script=$(echo $link_config | cut -d " " -f1)
+    local link=$(echo $link_config | cut -d " " -f2)
+    local executable=$(echo $link_config | cut -d " " -f3)
 
-	repo_dir="$shrepos/repos.d/$name"
-	test -d "$repo_dir" && (cd $repo_dir && git pull) || git clone $repo $repo_dir
-	
-	for script in $scripts ; do
-		chmod +x $repo_dir/$script
-		ln -sf $repo_dir/$script $bin_dir/$script
-	done
+    link=${link/#home/$HOME}
+    link=${link/#bin/$bin_dir}
+
+    echo "$link"
+
+    ln -sf $repo_dir/$script $link
+    
+    test "$executable" == 1 && chmod +x $repo_dir/$script
 }
 
-grep -A 1 -v -e "^#" -e "^$" "$repos" | while read -r repo ; do
+function update_repo() {
+	local name=$(echo $1 | cut -d " " -f1)
+    local repo=$(echo $1 | cut -d " " -f2)
+    local repo_dir="$shrepos/repos.d/$name"
+
+	test -d "$repo_dir" && (cd $repo_dir && git pull) || git clone $repo $repo_dir
+	
+	grep -A 1 -v -e "^#" -e "^$" "$repo_dir/sh.repo" | while read -r script ; do
+        test -n "$script" && update_link "$script" "$repo_dir"
+    done
+}
+
+function update_all() {
+    local repos="$1"
+    
+    grep -v -e "^#" -e "^$" "$repos" | while read -r repo ; do
+        test -n "$repo" && update_repo "$repo"
+    done
+}
+
+function update() {
+    local repo_name="$1"
+    local repos="$shrepos/reposn"
+
+    test -z "$repo_name" && update_all && exit 0  
+
+    local repo=$(grep "^$repo_name" "$repos")
+    
     test -n "$repo" && update_repo "$repo"
-done
+}
+
+update $@
+
+
 
 
